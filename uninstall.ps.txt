@@ -1,0 +1,37 @@
+# 1. Definir nombres y rutas
+$taskName = "TelegramControlBot"
+$dirPath = "C:\Scripts\TelegramBot"
+
+Write-Host "Iniciando proceso de limpieza y desinstalación..." -ForegroundColor Yellow
+
+# 2. Detener y eliminar la Tarea Programada
+try {
+    schtasks /End /TN $taskName 2>$null | Out-Null
+    schtasks /Delete /TN $taskName /F 2>$null | Out-Null
+    Write-Host "✓ Tarea programada '$taskName' eliminada." -ForegroundColor Green
+} catch {
+    Write-Host "- No se pudo eliminar la tarea programada o no existía." -ForegroundColor Gray
+}
+
+# 3. Finalizar cualquier proceso de PowerShell asociado que siga ejecutando el script
+try {
+    $processes = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*TelegramControl.ps1*" }
+    foreach ($proc in $processes) {
+        Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+        Write-Host "✓ Proceso en segundo plano detenido (ID: $($proc.ProcessId))." -ForegroundColor Green
+    }
+} catch {}
+
+# 4. Eliminar la carpeta C:\Scripts\TelegramBot y sus archivos
+if (Test-Path $dirPath) {
+    try {
+        Remove-Item -Path $dirPath -Recurse -Force
+        Write-Host "✓ Archivos y directorio '$dirPath' borrados correctamente." -ForegroundColor Green
+    } catch {
+        Write-Host "❌ Error al borrar la carpeta '$dirPath'. Asegúrate de cerrar la consola si la usaste en ese directorio." -ForegroundColor Red
+    }
+} else {
+    Write-Host "- La carpeta '$dirPath' ya no existe." -ForegroundColor Gray
+}
+
+Write-Host "`nDesinstalación finalizada con éxito. Todos los componentes fueron eliminados del sistema." -ForegroundColor Cyan
